@@ -4,8 +4,33 @@
 
 # Teslo API
 
-1. Run data base
+1. Clone repository
+2.
+
+```
+yarn install
+```
+
+3. Add the file
+
+```
+.env
+```
+
+4. Change the environment variables
+
+```
+.env
+```
+
+5. Run data base
 
 ```
 docker-compose up -d
+```
+
+6. Run:
+
+```
+yarn start:dev
 ```
