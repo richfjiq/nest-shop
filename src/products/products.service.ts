@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { validate as isUUId } from 'uuid';
 
 import { CreateProductDto } from './dto/create-product.dto';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
@@ -43,21 +44,43 @@ export class ProductsService {
     return products;
   }
 
-  async findOne(id: string) {
+  async findOne(term: string) {
+    let product: Product;
+
+    if (isUUId(term)) {
+      product = await this.productRepository.findOneBy({ id: term });
+    } else {
+      const queryBuilder = this.productRepository.createQueryBuilder();
+      product = await queryBuilder
+        .where('UPPER(title) =:title or slug =:slug', {
+          title: term.toUpperCase(),
+          slug: term.toLowerCase(),
+        })
+        .getOne();
+    }
+
+    if (!product)
+      throw new NotFoundException(`Item with id: "${term}", not found`);
+
+    return product;
+  }
+
+  async update(id: string, updateProductDto: UpdateProductDto) {
+    const product = await this.productRepository.preload({
+      id,
+      ...updateProductDto,
+    });
+
+    if (!product)
+      throw new NotFoundException(`Product with id: ${id}, not found`);
+
     try {
-      const item = await this.productRepository.findOneBy({ id });
+      await this.productRepository.save(product);
 
-      if (!item)
-        throw new NotFoundException(`Item with id: "${id}", not found`);
-
-      return item;
+      return product;
     } catch (error) {
       this.handleDbExceptions(error);
     }
-  }
-
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
   }
 
   async remove(id: string) {
